@@ -1,0 +1,24 @@
+import math
+import pytest
+
+from pydraulics import Channel
+# You will implement Trapezoidal in pydraulics.channel (or another module) to satisfy the Protocol.
+# from pydraulics import Trapezoidal  # when ready
+
+@pytest.mark.skip(reason="Enable after implementing Trapezoidal Section")
+def test_channel_trapezoidal_matches_utils():
+    from pydraulics import Trapezoidal
+    n, So = 0.013, 0.002
+    trap = Trapezoidal(b=2.5, m=1.5)
+    ch = Channel(n=n, So=So, section=trap)
+
+    y = 1.0
+    A = trap.area(y)
+    P = trap.wetted_perimeter(y)
+    Rh = A / P
+
+    from pydraulics.utils import manning_Q
+    Q_utils = manning_Q(A=A, Rh=Rh, S=So, n=n)
+    Q_ch = ch.calc_manning(y=y)
+
+    assert math.isclose(Q_utils, Q_ch, rel_tol=1e-12)

@@ -1,12 +1,12 @@
-from open_flow import TrapezoidalChannel, TriangularChannel, CircularChannel, RectangularChannel
-from sympy import sin, acos, sqrt
-from pipe_flow import Pipe
-from utils import formater_str
+# from open_flow import TrapezoidalChannel, TriangularChannel, CircularChannel, RectangularChannel
+# from sympy import sin, acos, sqrt
+# from pipe_flow import Pipe
+# from utils import formater_str
 
 
-# Perdidas de carga h 
-pipe1 = Pipe(Q=10, D=0.2, e=0.005, L=100)
-print(formater_str(pipe1.__dict__, ['Q', 'D', 'a', 'e', 'eD', 'v', 'nu', 'Re', 'L', 'method', 'flow_type', 'fr', 'h', 'hf']))
+# # Perdidas de carga h 
+# pipe1 = Pipe(Q=10, D=0.2, e=0.005, L=100)
+# print(formater_str(pipe1.__dict__, ['Q', 'D', 'a', 'e', 'eD', 'v', 'nu', 'Re', 'L', 'method', 'flow_type', 'fr', 'h', 'hf']))
 # pipe1 = Pipe(Q=1, D=0.9, L=100, method='Hazen-Williams', C=140)
 # print(formater_str(pipe1.__dict__, ['Q', 'D', 'a', 'v', 'nu', 'Re', 'L', 'method', 'C', 'flow_type', 'fr', 'h', 'hf']))
 

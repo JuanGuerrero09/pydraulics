@@ -1,0 +1,65 @@
+import math
+from pydraulics import Channel, Rectangular
+from pydraulics.utils import manning_Q
+
+def test_channel_no_section_matches_utils():
+    n, So = 0.013, 0.002
+    A, Rh = 8.0, 1.1
+
+    ch = Channel(n=n, So=So)
+    Q_from_channel = ch.calc_manning(A=A, Rh=Rh)
+    Q_from_utils = manning_Q(A=A, Rh=Rh, S=So, n=n)
+
+    assert math.isclose(Q_from_channel, Q_from_utils, rel_tol=1e-12)
+
+def test_channel_no_section_invalid_params():
+    ch = Channel(n=0.013, So=0.002)
+
+    # A <= 0
+    try:
+        ch.calc_manning(A=0.0, Rh=1.1)
+        assert False, "Expected ValueError for A <= 0"
+    except ValueError:
+        pass
+
+    # Missing both modes
+    try:
+        ch.calc_manning()
+        assert False, "Expected ValueError for insufficient inputs"
+    except ValueError:
+        pass
+
+def test_channel_rectangular_hydraulics_and_calc_manning_agree():
+    n, So = 0.013, 0.002
+    rect = Rectangular(b=3.0)
+    ch = Channel(n=n, So=So, section=rect)
+
+    y = 1.2
+    data = ch.hydraulics_at(y=y)
+    Q_calc = ch.calc_manning(y=y)
+
+    assert math.isclose(Q_calc, data["Q"], rel_tol=1e-12)
+    assert "A" in data and "P" in data and "Rh" in data and "Q" in data
+
+def test_channel_rectangular_matches_utils():
+    n, So = 0.013, 0.002
+    rect = Rectangular(b=3.0)
+    ch = Channel(n=n, So=So, section=rect)
+
+    y = 1.2
+    A = rect.area(y)
+    P = rect.wetted_perimeter(y)
+    Rh = A / P
+
+    Q_from_utils = manning_Q(A=A, Rh=Rh, S=So, n=n)
+    Q_from_ch = ch.calc_manning(y=y)
+
+    assert math.isclose(Q_from_utils, Q_from_ch, rel_tol=1e-12)
+
+def test_channel_rectangular_invalid_y():
+    ch = Channel(n=0.013, So=0.002, section=Rectangular(b=3.0))
+    try:
+        ch.hydraulics_at(y=0.0)
+        assert False, "Expected ValueError for y <= 0"
+    except ValueError:
+        pass

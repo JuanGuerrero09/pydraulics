@@ -2,6 +2,10 @@
 
 pydraulics is a Python package designed to facilitate hydraulic calculations and analysis. It provides a range of functionalities for open channel flow and pipe flow calculations.
 
+> Reinstala y usa
+uv pip install -e .
+pydraulics
+
 ## Features
 
 ### Open Channel Flow
