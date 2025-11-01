@@ -31,6 +31,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
+      - name: Create venv (UV)
+        run: uv venv
+
       - name: Install project (editable) + pytest
         run: |
           uv pip install -e .
