@@ -1,0 +1,113 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  test:
+    name: Test on tag ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+
+    outputs:
+      pkg_version: ${{ steps.read_version.outputs.pkg_version }}
+      tag_version: ${{ steps.parse_tag.outputs.tag_version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache UV (optional)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Create venv (UV)
+        run: uv venv
+
+      - name: Install project (editable) + pytest
+        run: |
+          uv pip install -e .
+          uv pip install pytest
+
+      - name: Run tests (pytest)
+        run: uv run -m pytest -vv -ra
+
+      - name: Read version from pyproject.toml
+        id: read_version
+        shell: bash
+        run: |
+          PY_VER=$(python - << 'PY'
+          import tomllib, pathlib
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          print(data["project"]["version"])
+          PY
+          )
+          echo "pkg_version=${PY_VER}" >> "$GITHUB_OUTPUT"
+
+      - name: Parse tag (strip 'v' prefix)
+        id: parse_tag
+        shell: bash
+        run: |
+          RAW="${GITHUB_REF_NAME}"   # e.g., v0.1.2
+          TAG_VER="${RAW#v}"         # -> 0.1.2
+          echo "tag_version=${TAG_VER}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure tag matches project version
+        shell: bash
+        run: |
+          echo "Project version: ${{ steps.read_version.outputs.pkg_version }}"
+          echo "Tag version:     ${{ steps.parse_tag.outputs.tag_version }}"
+          if [ "${{ steps.read_version.outputs.pkg_version }}" != "${{ steps.parse_tag.outputs.tag_version }}" ]; then
+            echo "ERROR: Tag version and pyproject.toml version do not match."
+            exit 1
+          fi
+
+      - name: Build sdist + wheel (UV)
+        run: |
+          uv build
+          ls -la dist
+
+      - name: Upload dist as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ steps.read_version.outputs.pkg_version }}
+          path: dist/*
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ success() }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ needs.test.outputs.pkg_version }}
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
